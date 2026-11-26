@@ -7,13 +7,7 @@ model provider. No OAuth flow, no copied tokens, no second login: the plugin
 reuses the sign-in the WorkBuddy app already has on this machine.
 
 This is the core implementation only — credential discovery, model catalog,
-chat streaming, and one provider registration. Account pools, credit panels,
-model toggles, and image/video tools from the upstream project are intentionally
-left out.
-
-The model selector shows only models whose ID or name contains “DeepSeek”; it
-also displays the upstream credit multiplier.
-DeepSeek V4.1 Flash accepts image input.
+chat streaming, and one provider registration.
 
 ## What it does
 
