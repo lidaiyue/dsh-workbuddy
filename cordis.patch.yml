@@ -1,0 +1,11 @@
+# Register the WorkBuddy provider. The plugin reuses the sign-in the WorkBuddy
+# desktop app already has on this machine, so no OAuth flow starts here.
+#
+# Optional config (all values are optional):
+#
+#   authFile:          explicit auth file path; defaults to the platform path
+#   catalogRefreshMs:  model catalog refresh interval (default 15 minutes,
+#                      minimum 1 minute)
+- insert:
+    - id: dsh-workbuddy
+      name: dsh-workbuddy

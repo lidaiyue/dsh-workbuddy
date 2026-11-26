@@ -1,0 +1,54 @@
+{
+  "name": "dsh-workbuddy",
+  "version": "0.1.0",
+  "description": "Connect the locally signed-in WorkBuddy desktop app to DeepSeek Harness as a model provider (CN and global accounts).",
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT",
+  "author": "lidaiyue",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lidaiyue/dsh-workbuddy.git"
+  },
+  "homepage": "https://github.com/lidaiyue/dsh-workbuddy#readme",
+  "bugs": {
+    "url": "https://github.com/lidaiyue/dsh-workbuddy/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "workbuddy",
+    "codebuddy",
+    "model-provider"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "^0.1.5-rc.2 || ^0.2.0-rc.1"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
