@@ -9,6 +9,8 @@ reuses the sign-in the WorkBuddy app already has on this machine.
 This is the core implementation only — credential discovery, model catalog,
 chat streaming, and one provider registration.
 
+![A DSH Web session](screenshots/workbuddy.png)
+
 ## What it does
 
 - Reads the WorkBuddy desktop auth file **read-only**. Newer desktop builds
