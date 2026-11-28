@@ -60,10 +60,8 @@ test('a missing finish_reason maps to a transport finish after [DONE]', async ()
   })
 })
 
-test('the parser publishes text deltas before [DONE] without waiting for stream close', async () => {
-  const { COMMIT_VISIBLE_TEXT_AFTER } = await import('../lib/adapter.js')
-  const content = '我会先检查问题，然后总结结果。'.repeat(20)
-  assert.ok(content.length >= COMMIT_VISIBLE_TEXT_AFTER)
+test('the parser publishes short text deltas immediately before [DONE] without buffering', async () => {
+  const content = '我会先检查问题，然后总结结果。'
   const response = sseResponse([
     { choices: [{ index: 0, delta: { content }, finish_reason: null }] },
   ], { closeStream: false })
@@ -91,14 +89,14 @@ test('empty tool_calls arrays do not close the text block between deltas', async
   assert.deepEqual(chunks.at(-1), { type: 'finish', reason: { kind: 'stop' } })
 })
 
-test('short narration before tool_calls is folded into reasoning, not visible text', async () => {
+test('narration before tool_calls stays visible text for official DSH folding rather than being rewritten as reasoning', async () => {
   const chunks = await collect(sseResponse(narrationThenToolCalls))
-  assert.equal(chunks.filter(chunk => chunk.type === 'text-delta').map(chunk => chunk.text).join(''), '')
   assert.equal(
-    chunks.filter(chunk => chunk.type === 'reasoning-delta').map(chunk => chunk.text).join(''),
+    chunks.filter(chunk => chunk.type === 'text-delta').map(chunk => chunk.text).join(''),
     '我先核实一下当前可用的数据通道，再说明能提供什么。',
   )
-  assert.equal(chunks.filter(chunk => chunk.type === 'block-start' && chunk.blockType === 'text').length, 0)
+  assert.equal(chunks.filter(chunk => chunk.type === 'reasoning-delta').length, 0)
+  assert.equal(chunks.filter(chunk => chunk.type === 'block-start' && chunk.blockType === 'text').length, 1)
   assert.equal(chunks.some(chunk => chunk.type === 'block-end' && chunk.block?.type === 'tool-call'), true)
   assert.deepEqual(chunks.at(-1), { type: 'finish', reason: { kind: 'tool-calls' } })
 })

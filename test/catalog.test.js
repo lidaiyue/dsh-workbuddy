@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { parseCreditMultiplier, parseUpstreamModel, selectCliModels } from '../lib/catalog.js'
+import { fetchCatalog, parseCreditMultiplier, parseUpstreamModel, selectCliModels } from '../lib/catalog.js'
 
 function upstream(overrides = {}) {
   return {
@@ -78,4 +78,21 @@ test('selectCliModels falls back to the whole document without a cli roster', ()
 test('selectCliModels throws instead of disarming the provider silently', () => {
   assert.throws(() => selectCliModels([upstream({ id: 'auto' })], [{ name: 'cli', models: ['auto'] }]), /empty list/u)
   assert.throws(() => selectCliModels([], []), /empty list/u)
+})
+
+test('fetchCatalog classifies auth and transport failures as LlmError codes', async () => {
+  const originalFetch = globalThis.fetch
+  const cred = { accessToken: 'tok', domain: 'www.codebuddy.cn' }
+  try {
+    globalThis.fetch = async () => new Response(JSON.stringify({ code: 401, msg: 'unauthorized' }), { status: 401 })
+    await assert.rejects(() => fetchCatalog(cred), (error) => error.code === 'AUTH')
+
+    globalThis.fetch = async () => new Response('upstream error', { status: 502 })
+    await assert.rejects(() => fetchCatalog(cred), (error) => error.code === 'TRANSPORT')
+
+    globalThis.fetch = async () => { throw new TypeError('network down') }
+    await assert.rejects(() => fetchCatalog(cred), (error) => error.code === 'TRANSPORT')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })

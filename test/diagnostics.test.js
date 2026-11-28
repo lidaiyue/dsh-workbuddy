@@ -18,8 +18,17 @@ function responseCapture() {
   }
 }
 
-function request({ method = 'GET', url = '/', host = '127.0.0.1:3080', origin } = {}) {
-  return { method, url, headers: { host, ...(origin === undefined ? {} : { origin }) } }
+function request({ method = 'GET', url = '/', host = '127.0.0.1:3080', origin, fetchSite, remoteAddress } = {}) {
+  return {
+    method,
+    url,
+    ...(remoteAddress === undefined ? {} : { socket: { remoteAddress } }),
+    headers: {
+      host,
+      ...(origin === undefined ? {} : { origin }),
+      ...(fetchSite === undefined ? {} : { 'sec-fetch-site': fetchSite }),
+    },
+  }
 }
 
 test('diagnostics only serves loopback callers', async () => {
@@ -49,4 +58,26 @@ test('diagnostics rejects non-GET methods', async () => {
   const res = responseCapture()
   await handler(request({ method: 'POST' }), res)
   assert.equal(res.status, 405)
+})
+
+test('diagnostics rejects non-loopback remoteAddress and cross-site browser requests', async () => {
+  const handler = createDiagnosticsHandler({ getStatus: () => ({ state: 'ok' }), refresh: async () => {} })
+  const remoteRes = responseCapture()
+  await handler(request({ host: 'localhost:3080', remoteAddress: '192.168.1.20' }), remoteRes)
+  assert.equal(remoteRes.status, 403)
+
+  const crossSiteRes = responseCapture()
+  await handler(request({ host: '127.0.0.1:3080', remoteAddress: '127.0.0.1', fetchSite: 'cross-site' }), crossSiteRes)
+  assert.equal(crossSiteRes.status, 403)
+})
+
+test('diagnostics returns 500 cleanly if refresh throws', async () => {
+  const handler = createDiagnosticsHandler({
+    getStatus: () => ({ state: 'ok' }),
+    refresh: async () => { throw new Error('boom') },
+  })
+  const res = responseCapture()
+  await handler(request({ url: '/plugins/dsh-workbuddy/status?refresh=1', remoteAddress: '::ffff:127.0.0.1' }), res)
+  assert.equal(res.status, 500)
+  assert.deepEqual(res.body, { error: 'refresh-failed' })
 })

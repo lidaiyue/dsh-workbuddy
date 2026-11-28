@@ -20,7 +20,9 @@ chat streaming, and one provider registration.
   credential's domain: CN accounts use `copilot.tencent.com`, global accounts
   use their brand gateway (`www.workbuddy.ai` / `www.codebuddy.ai`).
 - Refreshes the model catalog from the upstream `/v3/config` (the document the
-  app itself reads) and re-advertises it every 15 minutes.
+  app itself reads) and re-advertises it every 15 minutes. The selector lists
+  DeepSeek models from the catalog; other upstream model ids can still be
+  targeted explicitly via `resolveModel`.
 - Streams chat completions, reasoning deltas, tool calls, and token usage
   through a direct `LlmAdapter`. No pi-ai dependency and no loopback shim: the
   adapter talks to the gateway itself.
@@ -122,12 +124,12 @@ Not included, by design:
 - image and video generation
 - per-model enable/image/toggle settings
 - the loopback shim (this adapter holds the token itself)
-- stable conversation IDs and request fingerprint experiments
+- request fingerprint experiments
 
 ## Verification
 
 ```sh
-npm test           # 56 unit tests, no network
+npm test           # unit tests, no network
 node test/live.mjs # one real request through DSH's llm seam, free model by default
 ```
 

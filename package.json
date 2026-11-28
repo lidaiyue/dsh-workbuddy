@@ -4,7 +4,7 @@
   "description": "Connect the locally signed-in WorkBuddy desktop app to DeepSeek Harness as a model provider (CN and global accounts).",
   "type": "module",
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": ">=22.19.0"
   },
   "main": "lib/index.js",
   "exports": {

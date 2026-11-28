@@ -16,6 +16,7 @@
   `copilot.tencent.com`，国际版走各自的品牌网关（`www.workbuddy.ai` /
   `www.codebuddy.ai`）。
 - 从上游 `/v3/config`（App 自己读的那份文档）刷新模型目录，每 15 分钟重新通告。
+  模型选择器仅列出目录中的 DeepSeek 系列模型，其他上游模型 id 仍可通过显式配置解析。
 - 通过直接实现 `LlmAdapter` 转发 chat 补全、推理增量、工具调用与 token 用量。
   不依赖 pi-ai，也没有 loopback shim——适配器自己面对网关。
 - 提供本机诊断端点，可查看连接/目录状态、区域、模型数量与最近错误码，也可手动刷新目录；不返回凭据或账号标识。
@@ -103,12 +104,12 @@ token 刷新（`/v2/plugin/auth/token/refresh`）只在过期前 5 分钟内发�
 - 生图、生视频
 - 逐模型的启用 / 图片 / 思考开关
 - loopback shim（适配器自己持有 token）
-- 稳定会话 id 与请求指纹实验
+- 请求指纹实验
 
 ## 验证
 
 ```sh
-npm test           # 56 个单元测试，不联网
+npm test           # 单元测试，不联网
 node test/live.mjs # 真的走一遍 DSH 的 llm seam，默认用免费模型
 ```
 

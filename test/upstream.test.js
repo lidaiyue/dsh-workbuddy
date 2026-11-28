@@ -3,6 +3,7 @@ import { test } from 'node:test'
 
 import {
   businessCodeOf,
+  conversationIdOf,
   ensureSystemHead,
   failureOf,
   failureMessageOf,
@@ -102,6 +103,7 @@ test('failureOf maps gateway business codes to host failure classes', () => {
   assert.equal(failureOf(response(400, '{"code":11128}'), '{"code":11128}').code, 'CHANNEL_REJECTED')
   assert.equal(failureOf(response(400, '{"code":11115}'), '{"code":11115}').code, 'CONTEXT_WINDOW_EXCEEDED')
   assert.equal(failureOf(response(400, '{"code":11129}'), '{"code":11129}').code, 'INVALID_REQUEST')
+  assert.equal(failureOf(response(400, '{"code":11140}'), '{"code":11140}').code, 'CONTENT_REFUSED')
   assert.equal(failureOf(response(400, '{"code":14018}'), '{"code":14018}').code, 'QUOTA')
   assert.equal(failureOf(response(500, '{"code":14003}'), '{"code":14003}').code, 'RATE_LIMIT')
   assert.equal(failureOf(response(401, '{}'), '{}').code, 'AUTH')
@@ -110,9 +112,13 @@ test('failureOf maps gateway business codes to host failure classes', () => {
   assert.equal(failureOf(response(400, '{}'), '{}').code, 'INVALID_REQUEST')
 })
 
-test('failureOf carries Retry-After on failures', () => {
+test('failureOf carries Retry-After on failures (seconds and HTTP-date)', () => {
   const failure = failureOf(response(429, '{}', { 'retry-after': '3' }), '{}')
   assert.equal(failure.providerRetryAfterMs, 3000)
+
+  const future = new Date(Date.now() + 10_000).toUTCString()
+  const dated = failureOf(response(429, '{}', { 'retry-after': future }), '{}')
+  assert.ok(dated.providerRetryAfterMs > 0 && dated.providerRetryAfterMs <= 11_000)
 })
 
 test('normalizeToolSchemas rewrites the refused draft-4 spellings', () => {
@@ -124,10 +130,12 @@ test('normalizeToolSchemas rewrites the refused draft-4 spellings', () => {
         type: 'object',
         properties: {
           tuple: { items: [{ type: 'string' }] },
+          closedTuple: { items: [{ type: 'string' }], additionalItems: false },
           bounded: { type: 'number', minimum: 0, exclusiveMinimum: true },
           unanchored: { type: 'number', exclusiveMaximum: true },
           external: { $ref: 'https://example.com/schema.json' },
           internal: { $ref: '#/$defs/x' },
+          rootRef: { $ref: '#' },
           list: { type: 'object', required: 'a' },
           duplicates: { type: 'object', required: ['a', 'a'] },
         },
@@ -137,10 +145,24 @@ test('normalizeToolSchemas rewrites the refused draft-4 spellings', () => {
   normalizeToolSchemas(tools)
   const schema = tools[0].function.parameters.properties
   assert.deepEqual(schema.tuple, { prefixItems: [{ type: 'string' }], items: {} })
+  assert.deepEqual(schema.closedTuple, { prefixItems: [{ type: 'string' }], items: false })
   assert.equal(schema.bounded.exclusiveMinimum, 0)
+  assert.equal(schema.bounded.minimum, undefined)
   assert.equal(schema.unanchored.exclusiveMaximum, undefined)
   assert.equal(schema.external.$ref, undefined)
   assert.equal(schema.internal.$ref, '#/$defs/x')
+  assert.equal(schema.rootRef.$ref, '#')
   assert.deepEqual(schema.list.required, ['a'])
   assert.deepEqual(schema.duplicates.required, ['a'])
+})
+
+test('conversationIdOf derives a stable UUID per sessionId and preserves UUID inputs', () => {
+  const uuid = '550e8400-e29b-41d4-a716-446655440000'
+  assert.equal(conversationIdOf(uuid), uuid)
+  const a = conversationIdOf('session-alpha')
+  const b = conversationIdOf('session-alpha')
+  const c = conversationIdOf('session-beta')
+  assert.equal(a, b)
+  assert.notEqual(a, c)
+  assert.match(a, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u)
 })
